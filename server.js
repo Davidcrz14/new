@@ -22,34 +22,34 @@ passport.use(
         process.env.SPOTIFY_CLIENT_SECRET || "eb014f8e8fab4bb28b3400943efe67cb",
       callbackURL: "https://new-dk65.onrender.com/auth/spotify/callback",
     },
-    async (accessToken, refreshToken, expires_in, profile, done) => {
-      try {
-        let user = users.find((u) => u.spotifyId === profile.id);
-        if (!user) {
-          user = {
-            id: users.length + 1,
-            spotifyId: profile.id,
-            name: profile.displayName,
-            lat: Math.random() * 180 - 90,
-            lng: Math.random() * 360 - 180,
-            currentTrack: "No track playing",
-            accessToken: accessToken,
-          };
-          users.push(user);
-        } else {
-          user.accessToken = accessToken;
-        }
-        done(null, user);
-      } catch (error) {
-        console.error("Error en la estrategia de Spotify:", error);
-        done(error);
+    (accessToken, refreshToken, expires_in, profile, done) => {
+      console.log("Perfil de Spotify recibido:", profile.id);
+      let user = users.find((u) => u.spotifyId === profile.id);
+      if (!user) {
+        user = {
+          id: users.length + 1,
+          spotifyId: profile.id,
+          name: profile.displayName,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        };
+        users.push(user);
+      } else {
+        user.accessToken = accessToken;
+        user.refreshToken = refreshToken;
       }
+      done(null, user);
     }
   )
 );
 
-passport.serializeUser((user, done) => done(null, user.id));
+passport.serializeUser((user, done) => {
+  console.log("Serializando usuario:", user.id);
+  done(null, user.id);
+});
+
 passport.deserializeUser((id, done) => {
+  console.log("Deserializando usuario:", id);
   const user = users.find((u) => u.id === id);
   done(null, user);
 });
@@ -90,13 +90,19 @@ app.get(
 
 app.get(
   "/auth/spotify/callback",
+  (req, res, next) => {
+    console.log("Callback de Spotify recibido");
+    console.log("Query params:", req.query);
+    next();
+  },
   passport.authenticate("spotify", { failureRedirect: "/error" }),
   (req, res) => {
+    console.log("Autenticación exitosa");
+    console.log("Usuario:", req.user);
     res.redirect("/");
   }
 );
 
-// Nueva ruta para obtener la canción actual
 app.get("/api/current-track", async (req, res) => {
   if (req.isAuthenticated()) {
     try {
@@ -129,7 +135,6 @@ app.get("/api/users", (req, res) => {
   res.json(users);
 });
 
-// Nueva ruta para verificar el estado de autenticación
 app.get("/api/user", (req, res) => {
   if (req.isAuthenticated()) {
     res.json({
@@ -142,13 +147,19 @@ app.get("/api/user", (req, res) => {
   }
 });
 
-// Añade manejo de errores global
-app.use((err, req, res, next) => {
-  console.error("Error no manejado:", err);
-  res.status(500).json({ error: "Error interno del servidor" });
+app.get("/error", (req, res) => {
+  console.log("Redirigido a /error");
+  res.status(500).json({ error: "Error en la autenticación de Spotify" });
 });
 
-// Modifica el listener del servidor
+// Manejador de errores global
+app.use((err, req, res, next) => {
+  console.error("Error no manejado:", err);
+  res
+    .status(500)
+    .json({ error: "Error interno del servidor", details: err.message });
+});
+
 const server = app.listen(port, () =>
   console.log(`Servidor corriendo en http://localhost:${port}`)
 );
