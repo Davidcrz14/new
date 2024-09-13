@@ -151,6 +151,11 @@ app.get("/api/user", async (req, res) => {
         authenticated: true,
         name: req.user.name,
         currentTrack: req.user.currentTrack,
+        // Añadir más información del usuario
+        profileUrl: req.user.profileUrl,
+        profileImage: req.user.photos[0]?.value,
+        followers: req.user.followers,
+        country: req.user.country
       });
     } catch (error) {
       console.error("Error al obtener la información del usuario:", error);

@@ -15,20 +15,43 @@ function authenticateWithSpotify() {
 
 // Function to update UI based on user data
 function updateUserUI(userData) {
-  const userNameElement = document.getElementById("user-name");
-  const currentTrackElement = document.getElementById("current-track");
+  const userInfoElement = document.getElementById("user-info");
   const authButton = document.getElementById("auth-button");
 
   if (userData.authenticated) {
-    userNameElement.textContent = `Hola, ${userData.name}!`;
-    currentTrackElement.textContent = `Escuchando: ${
-      userData.currentTrack || "No hay canción reproduciéndose"
-    }`;
+    userInfoElement.innerHTML = `
+      <div class="card bg-base-100 shadow-xl">
+        <figure class="px-10 pt-10">
+          <img src="${
+            userData.profileImage
+          }" alt="Foto de perfil" class="rounded-full w-24 h-24">
+        </figure>
+        <div class="card-body items-center text-center">
+          <h2 class="card-title">${userData.name}</h2>
+          <p>País: ${userData.country}</p>
+          <p>Seguidores: ${userData.followers}</p>
+          <p>Escuchando: ${
+            userData.currentTrack || "No hay canción reproduciéndose"
+          }</p>
+          <div class="card-actions">
+            <a href="${
+              userData.profileUrl
+            }" target="_blank" class="btn btn-primary">Ver perfil en Spotify</a>
+          </div>
+        </div>
+      </div>
+    `;
     authButton.style.display = "none";
   } else {
+    userInfoElement.innerHTML = `
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title text-primary">No autenticado</h2>
+          <p>Conéctate a Spotify para ver tu información</p>
+        </div>
+      </div>
+    `;
     authButton.style.display = "block";
-    userNameElement.textContent = "No autenticado";
-    currentTrackElement.textContent = "";
   }
 }
 
