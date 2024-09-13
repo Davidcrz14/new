@@ -10,13 +10,17 @@ function addMarkers(users) {
   markers.forEach((marker) => map.removeLayer(marker));
   markers = [];
   users.forEach((user) => {
-    const marker = L.marker([user.lat, user.lng]).addTo(map);
-    marker.bindPopup(`<b>${user.name}</b><br>Escuchando: ${user.currentTrack}`);
-    markers.push(marker);
+    if (user.lat && user.lng) {
+      const marker = L.marker([user.lat, user.lng]).addTo(map);
+      marker.bindPopup(
+        `<b>${user.name}</b><br>Escuchando: ${user.currentTrack || "Nada"}`
+      );
+      markers.push(marker);
+    }
   });
 }
 
-// Modifica la función fetchUserData
+// Función para obtener datos de usuarios
 async function fetchUserData() {
   try {
     const response = await axios.get(
@@ -69,14 +73,7 @@ function getUserLocation() {
   }
 }
 
-// Actualizar datos cada 30 segundos
-setInterval(fetchUserData, 30000);
-
-// Inicializar la aplicación
-checkAuthStatus();
-getUserLocation();
-
-// Verificar si el usuario está autenticado
+// Función para verificar el estado de autenticación
 async function checkAuthStatus() {
   try {
     const response = await axios.get("https://new-dk65.onrender.com/api/user", {
@@ -91,16 +88,16 @@ async function checkAuthStatus() {
         response.data.currentTrack || "Nada"
       }`;
       document.getElementById("user-info").classList.remove("hidden");
-      fetchUserData(); // Cargar datos de usuarios después de autenticación
-      getCurrentTrack(); // Obtener la canción actual
-      setInterval(getCurrentTrack, 10000); // Actualizar la canción cada 10 segundos
+      fetchUserData();
+      getCurrentTrack();
+      setInterval(getCurrentTrack, 10000);
     }
   } catch (error) {
     console.error("Error al verificar el estado de autenticación:", error);
   }
 }
 
-// Modifica la función getCurrentTrack
+// Función para obtener la canción actual
 async function getCurrentTrack() {
   try {
     const response = await axios.get(
@@ -115,4 +112,9 @@ async function getCurrentTrack() {
   }
 }
 
+// Inicializar la aplicación
 checkAuthStatus();
+getUserLocation();
+
+// Actualizar datos cada 30 segundos
+setInterval(fetchUserData, 30000);
