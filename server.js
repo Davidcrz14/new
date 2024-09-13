@@ -10,10 +10,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Credenciales de Spotify (usar variables de entorno en producción)
-const SPOTIFY_CLIENT_ID =
-  process.env.SPOTIFY_CLIENT_ID || "695b999fb05f4ed397863b68a8afedd7";
-const SPOTIFY_CLIENT_SECRET =
-  process.env.SPOTIFY_CLIENT_SECRET || "0713f557c0204cb48dab7f9d6958a0b0";
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
 // Array para almacenar usuarios en memoria (considerar una base de datos en producción)
 let users = [];
@@ -26,8 +24,7 @@ passport.use(
       clientSecret: SPOTIFY_CLIENT_SECRET,
       callbackURL: "https://new-dk65.onrender.com/auth/spotify/callback",
     },
-    (accessToken, refreshToken, expires_in, profile, done) => {
-      console.log("Perfil de Spotify recibido:", profile.id);
+    async (accessToken, refreshToken, expires_in, profile, done) => {
       try {
         let user = users.find((u) => u.spotifyId === profile.id);
         if (!user) {
@@ -37,6 +34,7 @@ passport.use(
             name: profile.displayName,
             accessToken: accessToken,
             refreshToken: refreshToken,
+            currentTrack: "",
           };
           users.push(user);
         } else {
@@ -53,12 +51,10 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => {
-  console.log("Serializando usuario:", user.id);
   done(null, user.id);
 });
 
 passport.deserializeUser((id, done) => {
-  console.log("Deserializando usuario:", id);
   const user = users.find((u) => u.id === id);
   done(null, user);
 });
@@ -67,7 +63,7 @@ passport.deserializeUser((id, done) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "tu_secreto",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -94,64 +90,56 @@ app.get(
       "user-read-private",
       "user-read-currently-playing",
     ],
-    showDialog: true, // Forzar el diálogo de autorización de Spotify
+    showDialog: true,
   })
 );
 
 app.get(
   "/auth/spotify/callback",
-  (req, res, next) => {
-    console.log("Callback de Spotify recibido");
-    console.log("Query params:", req.query);
-    next();
-  },
   passport.authenticate("spotify", { failureRedirect: "/auth-error" }),
   (req, res) => {
-    console.log("Autenticación exitosa");
-    console.log("Usuario:", req.user);
     res.redirect("/");
   }
 );
 
-app.get("/api/current-track", async (req, res) => {
+async function getCurrentTrack(user) {
+  try {
+    const response = await axios.get(
+      "https://api.spotify.com/v1/me/player/currently-playing",
+      {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      }
+    );
+
+    if (response.data && response.data.item) {
+      const trackName = response.data.item.name;
+      const artistName = response.data.item.artists[0].name;
+      return `${trackName} - ${artistName}`;
+    } else {
+      return "No hay canción reproduciéndose";
+    }
+  } catch (error) {
+    console.error("Error al obtener la canción actual:", error);
+    throw error;
+  }
+}
+
+app.get("/api/user", async (req, res) => {
   if (req.isAuthenticated()) {
     try {
-      const response = await axios.get(
-        "https://api.spotify.com/v1/me/player/currently-playing",
-        {
-          headers: {
-            Authorization: `Bearer ${req.user.accessToken}`,
-          },
-        }
-      );
-      if (response.data && response.data.item) {
-        const trackName = response.data.item.name;
-        const artistName = response.data.item.artists[0].name;
-        req.user.currentTrack = `${trackName} - ${artistName}`;
-        res.json({ currentTrack: req.user.currentTrack });
-      } else {
-        res.json({ currentTrack: "No track playing" });
-      }
+      req.user.currentTrack = await getCurrentTrack(req.user);
+      res.json({
+        authenticated: true,
+        name: req.user.name,
+        currentTrack: req.user.currentTrack,
+      });
     } catch (error) {
-      console.error("Error al obtener la canción actual:", error);
-      res.status(500).json({ error: "Error al obtener la canción actual" });
+      res
+        .status(500)
+        .json({ error: "Error al obtener la información del usuario" });
     }
-  } else {
-    res.status(401).json({ error: "Usuario no autenticado" });
-  }
-});
-
-app.get("/api/users", (req, res) => {
-  res.json(users);
-});
-
-app.get("/api/user", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json({
-      authenticated: true,
-      name: req.user.name,
-      currentTrack: req.user.currentTrack,
-    });
   } else {
     res.json({ authenticated: false });
   }
@@ -159,8 +147,7 @@ app.get("/api/user", (req, res) => {
 
 app.get("/auth-error", (req, res) => {
   res.status(403).json({
-    error:
-      "Error en la autenticación de Spotify. Es posible que el usuario no esté registrado en la aplicación.",
+    error: "Error en la autenticación de Spotify.",
   });
 });
 

@@ -11,31 +11,33 @@ function authenticateWithSpotify() {
   window.location.href = "/auth/spotify";
 }
 
+// Function to update UI based on user data
+function updateUserUI(userData) {
+  const userNameElement = document.getElementById("user-name");
+  const currentTrackElement = document.getElementById("current-track");
+  const authButton = document.getElementById("auth-button");
+
+  if (userData.authenticated) {
+    userNameElement.textContent = `Hola, ${userData.name}!`;
+    currentTrackElement.textContent = `Escuchando: ${
+      userData.currentTrack || "No hay canción reproduciéndose"
+    }`;
+    authButton.style.display = "none";
+  } else {
+    authButton.style.display = "block";
+    userNameElement.textContent = "No autenticado";
+    currentTrackElement.textContent = "";
+  }
+}
+
 // Function to get user information
 async function getUserInfo() {
   try {
     const response = await axios.get("/api/user");
-    const userData = response.data;
-
-    if (userData.authenticated) {
-      document.getElementById(
-        "user-name"
-      ).textContent = `Nombre: ${userData.name}`;
-      document.getElementById("current-track").textContent = `Canción actual: ${
-        userData.currentTrack || "No hay canción reproduciéndose"
-      }`;
-      document.getElementById("auth-button").style.display = "none";
-    } else {
-      document.getElementById("auth-button").style.display = "block";
-      document.getElementById("user-name").textContent = "No autenticado";
-      document.getElementById("current-track").textContent = "";
-    }
+    updateUserUI(response.data);
   } catch (error) {
     console.error("Error al obtener la información del usuario:", error);
-    document.getElementById("user-name").textContent =
-      "Error al obtener información del usuario";
-    document.getElementById("current-track").textContent = "";
-    document.getElementById("auth-button").style.display = "block";
+    updateUserUI({ authenticated: false });
   }
 }
 
@@ -46,27 +48,47 @@ function getUserLocation() {
       function (position) {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-        document.getElementById(
-          "user-location"
-        ).textContent = `Ubicación: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
 
-        // Add a marker to the map
-        L.marker([lat, lon]).addTo(map).bindPopup("Tu ubicación").openPopup();
-
-        // Center the map on the user's location
-        map.setView([lat, lon], 13);
+        updateLocationUI(lat, lon);
+        addMarkerToMap(lat, lon);
+        centerMapOnLocation(lat, lon);
       },
       function (error) {
         console.error("Error getting location:", error);
-        document.getElementById("user-location").textContent =
-          "No se pudo obtener la ubicación";
+        updateLocationUI(null, null);
       }
     );
   } else {
-    document.getElementById("user-location").textContent =
-      "Geolocalización no soportada";
+    updateLocationUI(null, null);
   }
 }
+
+function updateLocationUI(lat, lon) {
+  const locationElement = document.getElementById("user-location");
+  if (lat !== null && lon !== null) {
+    locationElement.textContent = `Ubicación: ${lat.toFixed(2)}, ${lon.toFixed(
+      2
+    )}`;
+  } else {
+    locationElement.textContent = "No se pudo obtener la ubicación";
+  }
+}
+
+function addMarkerToMap(lat, lon) {
+  if (map.hasLayer(marker)) {
+    map.removeLayer(marker);
+  }
+  marker = L.marker([lat, lon])
+    .addTo(map)
+    .bindPopup("Tu ubicación")
+    .openPopup();
+}
+
+function centerMapOnLocation(lat, lon) {
+  map.setView([lat, lon], 13);
+}
+
+let marker;
 
 // Function to handle authentication errors
 function checkForAuthError() {
@@ -75,17 +97,17 @@ function checkForAuthError() {
     const errorMessage =
       urlParams.get("error_description") ||
       "Error en la autenticación de Spotify";
+    updateUserUI({ authenticated: false });
     document.getElementById("user-name").textContent = errorMessage;
-    document.getElementById("auth-button").style.display = "block";
   }
 }
 
 // Call functions when the page loads
-window.onload = function () {
+document.addEventListener("DOMContentLoaded", function () {
   getUserInfo();
   getUserLocation();
   checkForAuthError();
-};
+});
 
 // Refresh user info every 30 seconds
 setInterval(getUserInfo, 30000);
