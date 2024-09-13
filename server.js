@@ -9,9 +9,9 @@ const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Credenciales de Spotify (usar variables de entorno en producción)
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+// Credenciales de Spotify
+const SPOTIFY_CLIENT_ID = "695b999fb05f4ed397863b68a8afedd7";
+const SPOTIFY_CLIENT_SECRET = "0713f557c0204cb48dab7f9d6958a0b0";
 
 // Array para almacenar usuarios en memoria (considerar una base de datos en producción)
 let users = [];
@@ -63,7 +63,7 @@ passport.deserializeUser((id, done) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: "tu_secreto_de_sesion_aqui",
     resave: false,
     saveUninitialized: false,
     cookie: {
