@@ -5,8 +5,6 @@ const SpotifyStrategy = require("passport-spotify").Strategy;
 const cors = require("cors");
 const axios = require("axios");
 const path = require("path");
-const fs = require("fs");
-const util = require("util");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,8 +16,10 @@ let users = [];
 passport.use(
   new SpotifyStrategy(
     {
-      clientID: "708b8752d1fe4454bf79955f90007e63",
-      clientSecret: "eb014f8e8fab4bb28b3400943efe67cb",
+      clientID:
+        process.env.SPOTIFY_CLIENT_ID || "708b8752d1fe4454bf79955f90007e63",
+      clientSecret:
+        process.env.SPOTIFY_CLIENT_SECRET || "eb014f8e8fab4bb28b3400943efe67cb",
       callbackURL: "https://new-dk65.onrender.com/auth/spotify/callback",
     },
     async (accessToken, refreshToken, expires_in, profile, done) => {
@@ -57,11 +57,24 @@ passport.deserializeUser((id, done) => {
 // Middleware
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
-  session({ secret: "tu_secreto", resave: true, saveUninitialized: true })
+  session({
+    secret: process.env.SESSION_SECRET || "tu_secreto",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    },
+  })
 );
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://new-dk65.onrender.com",
+    credentials: true,
+  })
+);
 
 // Rutas
 app.get(
