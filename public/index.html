@@ -1,65 +1,86 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mapa de Música Spotify</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.1.0/dist/full.css" rel="stylesheet" type="text/css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@3.1.0/dist/full.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
     <style>
-        #map { height: 100vh; width: 70%; float: left; }
-        #user-info {
-            width: 30%;
-            height: 100vh;
-            float: right;
-            padding: 20px;
-            overflow-y: auto;
+      #map {
+        height: 100vh;
+        width: 70%;
+        float: left;
+      }
+      #user-info {
+        width: 30%;
+        height: 100vh;
+        float: right;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      .btn-spotify {
+        transition: all 0.3s ease;
+      }
+      .btn-spotify:hover {
+        transform: scale(1.05);
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
         }
-        .btn-spotify {
-            transition: all 0.3s ease;
+        to {
+          opacity: 1;
         }
-        .btn-spotify:hover {
-            transform: scale(1.05);
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="map" class="h-screen"></div>
 
     <div id="user-info" class="bg-base-300 p-6 rounded-lg shadow-lg fade-in">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-primary">Tu información</h2>
-                <p id="user-name" class="text-lg"></p>
-                <p id="current-track" class="text-lg"></p>
-                <p id="user-location" class="text-lg"></p>
-            </div>
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title text-primary">Tu información</h2>
+          <p id="user-name" class="text-lg"></p>
+          <p id="current-track" class="text-lg"></p>
+          <p id="user-location" class="text-lg"></p>
         </div>
+      </div>
     </div>
 
     <div id="auth-button" class="absolute top-4 right-4 z-[1000] fade-in">
-        <button onclick="authenticateWithSpotify()" class="btn btn-primary btn-spotify">
-            <i class="fab fa-spotify mr-2 text-xl"></i> Conectar con Spotify
-        </button>
+      <button
+        onclick="authenticateWithSpotify()"
+        class="btn btn-primary btn-spotify"
+      >
+        <i class="fab fa-spotify mr-2 text-xl"></i> Conectarr con Spotify
+      </button>
     </div>
 
     <script>
-    function authenticateWithSpotify() {
-        window.location.href = 'https://new-dk65.onrender.com/auth/spotify';
-    }
+      function authenticateWithSpotify() {
+        window.location.href = "https://new-dk65.onrender.com/auth/spotify";
+      }
     </script>
 
     <script src="app.js"></script>
-</body>
+  </body>
 </html>
