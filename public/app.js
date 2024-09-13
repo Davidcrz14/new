@@ -10,8 +10,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Credenciales de Spotify (no usar variables de entorno)
-const SPOTIFY_CLIENT_ID = "708b8752d1fe4454bf79955f90007e63";
-const SPOTIFY_CLIENT_SECRET = "eb014f8e8fab4bb28b3400943efe67cb";
+const SPOTIFY_CLIENT_ID = "695b999fb05f4ed397863b68a8afedd7";
+const SPOTIFY_CLIENT_SECRET = "0713f557c0204cb48dab7f9d6958a0b0";
 
 // Array para almacenar usuarios en memoria
 let users = [];
