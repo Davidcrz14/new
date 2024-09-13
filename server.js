@@ -9,36 +9,45 @@ const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Array para almacenar usuarios en memoria
+// Credenciales de Spotify (usar variables de entorno en producción)
+const SPOTIFY_CLIENT_ID =
+  process.env.SPOTIFY_CLIENT_ID || "695b999fb05f4ed397863b68a8afedd7";
+const SPOTIFY_CLIENT_SECRET =
+  process.env.SPOTIFY_CLIENT_SECRET || "0713f557c0204cb48dab7f9d6958a0b0";
+
+// Array para almacenar usuarios en memoria (considerar una base de datos en producción)
 let users = [];
-//uwa
+
 // Configuración de Passport
 passport.use(
   new SpotifyStrategy(
     {
-      clientID:
-        process.env.SPOTIFY_CLIENT_ID || "708b8752d1fe4454bf79955f90007e63",
-      clientSecret:
-        process.env.SPOTIFY_CLIENT_SECRET || "eb014f8e8fab4bb28b3400943efe67cb",
+      clientID: SPOTIFY_CLIENT_ID,
+      clientSecret: SPOTIFY_CLIENT_SECRET,
       callbackURL: "https://new-dk65.onrender.com/auth/spotify/callback",
     },
     (accessToken, refreshToken, expires_in, profile, done) => {
       console.log("Perfil de Spotify recibido:", profile.id);
-      let user = users.find((u) => u.spotifyId === profile.id);
-      if (!user) {
-        user = {
-          id: users.length + 1,
-          spotifyId: profile.id,
-          name: profile.displayName,
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-        };
-        users.push(user);
-      } else {
-        user.accessToken = accessToken;
-        user.refreshToken = refreshToken;
+      try {
+        let user = users.find((u) => u.spotifyId === profile.id);
+        if (!user) {
+          user = {
+            id: users.length + 1,
+            spotifyId: profile.id,
+            name: profile.displayName,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+          };
+          users.push(user);
+        } else {
+          user.accessToken = accessToken;
+          user.refreshToken = refreshToken;
+        }
+        done(null, user);
+      } catch (error) {
+        console.error("Error en la estrategia de Spotify:", error);
+        done(error);
       }
-      done(null, user);
     }
   )
 );
@@ -85,6 +94,7 @@ app.get(
       "user-read-private",
       "user-read-currently-playing",
     ],
+    showDialog: true, // Forzar el diálogo de autorización de Spotify
   })
 );
 
@@ -95,7 +105,7 @@ app.get(
     console.log("Query params:", req.query);
     next();
   },
-  passport.authenticate("spotify", { failureRedirect: "/error" }),
+  passport.authenticate("spotify", { failureRedirect: "/auth-error" }),
   (req, res) => {
     console.log("Autenticación exitosa");
     console.log("Usuario:", req.user);
@@ -147,17 +157,21 @@ app.get("/api/user", (req, res) => {
   }
 });
 
-app.get("/error", (req, res) => {
-  console.log("Redirigido a /error");
-  res.status(500).json({ error: "Error en la autenticación de Spotify" });
+app.get("/auth-error", (req, res) => {
+  res.status(403).json({
+    error:
+      "Error en la autenticación de Spotify. Es posible que el usuario no esté registrado en la aplicación.",
+  });
 });
 
 // Manejador de errores global
 app.use((err, req, res, next) => {
   console.error("Error no manejado:", err);
-  res
-    .status(500)
-    .json({ error: "Error interno del servidor", details: err.message });
+  res.status(500).json({
+    error: "Error interno del servidor",
+    details: err.message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
 });
 
 const server = app.listen(port, () =>

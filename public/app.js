@@ -27,9 +27,15 @@ async function getUserInfo() {
       document.getElementById("auth-button").style.display = "none";
     } else {
       document.getElementById("auth-button").style.display = "block";
+      document.getElementById("user-name").textContent = "No autenticado";
+      document.getElementById("current-track").textContent = "";
     }
   } catch (error) {
     console.error("Error al obtener la información del usuario:", error);
+    document.getElementById("user-name").textContent =
+      "Error al obtener información del usuario";
+    document.getElementById("current-track").textContent = "";
+    document.getElementById("auth-button").style.display = "block";
   }
 }
 
@@ -62,10 +68,23 @@ function getUserLocation() {
   }
 }
 
+// Function to handle authentication errors
+function checkForAuthError() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("auth_error")) {
+    const errorMessage =
+      urlParams.get("error_description") ||
+      "Error en la autenticación de Spotify";
+    document.getElementById("user-name").textContent = errorMessage;
+    document.getElementById("auth-button").style.display = "block";
+  }
+}
+
 // Call functions when the page loads
 window.onload = function () {
   getUserInfo();
   getUserLocation();
+  checkForAuthError();
 };
 
 // Refresh user info every 30 seconds
