@@ -6,6 +6,8 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
 
+let marker;
+
 // Function to authenticate with Spotify
 function authenticateWithSpotify() {
   window.location.href = "/auth/spotify";
@@ -33,7 +35,7 @@ function updateUserUI(userData) {
 // Function to get user information
 async function getUserInfo() {
   try {
-    const response = await axios.get("/api/user");
+    const response = await axios.get("/api/user", { withCredentials: true });
     updateUserUI(response.data);
   } catch (error) {
     console.error("Error al obtener la información del usuario:", error);
@@ -75,7 +77,7 @@ function updateLocationUI(lat, lon) {
 }
 
 function addMarkerToMap(lat, lon) {
-  if (map.hasLayer(marker)) {
+  if (marker) {
     map.removeLayer(marker);
   }
   marker = L.marker([lat, lon])
@@ -88,17 +90,14 @@ function centerMapOnLocation(lat, lon) {
   map.setView([lat, lon], 13);
 }
 
-let marker;
-
 // Function to handle authentication errors
 function checkForAuthError() {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get("auth_error")) {
     const errorMessage =
-      urlParams.get("error_description") ||
-      "Error en la autenticación de Spotify";
+      urlParams.get("error") || "Error en la autenticación de Spotify";
     updateUserUI({ authenticated: false });
-    document.getElementById("user-name").textContent = errorMessage;
+    document.getElementById("user-name").textContent = `Error: ${errorMessage}`;
   }
 }
 

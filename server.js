@@ -10,13 +10,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Credenciales de Spotify
-const SPOTIFY_CLIENT_ID = "695b999fb05f4ed397863b68a8afedd7";
-const SPOTIFY_CLIENT_SECRET = "0713f557c0204cb48dab7f9d6958a0b0";
+const SPOTIFY_CLIENT_ID =
+  process.env.SPOTIFY_CLIENT_ID || "695b999fb05f4ed397863b68a8afedd7";
+const SPOTIFY_CLIENT_SECRET =
+  process.env.SPOTIFY_CLIENT_SECRET || "0713f557c0204cb48dab7f9d6958a0b0";
 
-// Array para almacenar usuarios en memoria (considerar una base de datos en producción)
 let users = [];
 
-// Configuración de Passport
 passport.use(
   new SpotifyStrategy(
     {
@@ -26,6 +26,7 @@ passport.use(
     },
     async (accessToken, refreshToken, expires_in, profile, done) => {
       try {
+        console.log("Perfil de Spotify recibido:", profile);
         let user = users.find((u) => u.spotifyId === profile.id);
         if (!user) {
           user = {
@@ -63,7 +64,7 @@ passport.deserializeUser((id, done) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
   session({
-    secret: "tu_secreto_de_sesion_aqui",
+    secret: "anyadominaraalmundo",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -94,13 +95,29 @@ app.get(
   })
 );
 
-app.get(
-  "/auth/spotify/callback",
-  passport.authenticate("spotify", { failureRedirect: "/auth-error" }),
-  (req, res) => {
-    res.redirect("/");
-  }
-);
+app.get("/auth/spotify/callback", (req, res, next) => {
+  passport.authenticate("spotify", (err, user, info) => {
+    if (err) {
+      console.error("Error en la autenticación:", err);
+      return res.redirect(
+        "/auth-error?error=" + encodeURIComponent(err.message)
+      );
+    }
+    if (!user) {
+      console.error("No se pudo autenticar al usuario:", info);
+      return res.redirect("/auth-error?error=authentication_failed");
+    }
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error("Error al iniciar sesión:", err);
+        return res.redirect(
+          "/auth-error?error=" + encodeURIComponent(err.message)
+        );
+      }
+      return res.redirect("/");
+    });
+  })(req, res, next);
+});
 
 async function getCurrentTrack(user) {
   try {
@@ -136,6 +153,7 @@ app.get("/api/user", async (req, res) => {
         currentTrack: req.user.currentTrack,
       });
     } catch (error) {
+      console.error("Error al obtener la información del usuario:", error);
       res
         .status(500)
         .json({ error: "Error al obtener la información del usuario" });
@@ -146,8 +164,10 @@ app.get("/api/user", async (req, res) => {
 });
 
 app.get("/auth-error", (req, res) => {
+  const error = req.query.error || "Error desconocido";
   res.status(403).json({
-    error: "Error en la autenticación de Spotify.",
+    error: "Error en la autenticación de Spotify",
+    details: error,
   });
 });
 
