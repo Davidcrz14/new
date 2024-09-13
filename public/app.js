@@ -32,7 +32,7 @@ async function fetchUserData() {
 
 // Función para autenticar con Spotify
 function authenticateWithSpotify() {
-    window.location.href = '/auth/spotify';
+    window.location.href = 'https://new-dk65.onrender.com/auth/spotify';
 }
 
 // Función para obtener la ubicación del usuario
